@@ -63,15 +63,14 @@ else # container is already up, does not need to be created
 fi
 
 # set up MITM
-MITM_PORT=22
-sudo forever -l /var/lib/lxc/$CONTAINER_NAME/rootfs/var/log/auth.log -a
-start /home/student/MITM/mitm.js -n $CONTAINER_NAME -i $CONTAINER_IP -p
-$MITM_PORT --auto-access --auto-access-fixed 2 --debug
-sudo iptables --table nat --insert PREROUTING --source 0.0.0.0/0 --destination "$EXTERNAL_IP" --jump DNAT --to-destination "$CONTAINER_NAME"
-sudo iptables --table nat --insert POSTROUTING --source "$CONTAINER_IP" --destination 0.0.0.0/0 --jump SNAT --to-source "$EXTERNAL_IP"
-sudo ip addr add "$EXTERNAL_IP"/16 brd + dev "eth0"
-sudo iptables --table nat --insert PREROUTING --source 0.0.0.0/0 --
-destination "$EXTERNAL_IP" --protocol tcp --dport 22 --jump DNAT --to-
-destination "$EXTERNAL_IP":"$mitm_port"
+address=`sudo lxc-info -n $3 -iH`
+
+sudo forever -l ~/testcontainer.log -a start ~/MITM/mitm.js -n $3 -i $address -p 32887 --auto-access --auto-access-fixed 4 --debug
+sudo sysctl -w net.ipv4.conf.all.route_localnet=1
+
+sudo iptables --table nat --insert PREROUTING --source 0.0.0.0/0 --destination $2 --jump DNAT --to-destination $address
+sudo iptables --table nat --insert POSTROUTING --source $address --destination 0.0.0.0/0 --jump SNAT --to-source $2
+sudo iptables --table nat --insert PREROUTING --source 0.0.0.0/0 --destination $2 --protocol tcp --dport 22 --jump DNAT --to-destination 127.0.0.1:32887
+sudo ip addr add $2/16 brd + dev eth0
 
 exit 0
