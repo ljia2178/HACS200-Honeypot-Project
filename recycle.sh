@@ -62,6 +62,17 @@ else # container is already up, does not need to be created
     fi
 fi
 
+# create new container
+if sudo lxc-ls | grep -q "$CONTAINER_NAME"; 
+then
+    echo “[URGENT] SEVERE ERROR IN RECYCLE SCRIPT (100)” >> scripts.log
+    exit 100
+else
+    sudo lxc-create -n “$CONTAINER_NAME” -t download -- -d ubuntu -r focal -a amd64
+    sudo lxc-start -n “$CONTAINER_NAME”
+    sudo systemctl restart lxc-net
+    sudo lxc-attach “$CONTAINER_NAME” -- apt install openssh-server -y
+fi
 
 # install MITM
 DAY=`date +%Y-%m-%d`
